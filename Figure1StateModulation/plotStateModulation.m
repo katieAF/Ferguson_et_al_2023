@@ -1,4 +1,4 @@
-function plotStateModulation()
+function plotStateModulation(cfg)
 
 % PLOTSTATEMODULATION Plots distribution plots and box plots for state modulation data in Figure 1 of Ferguson et al. 2023.
 %
@@ -9,8 +9,12 @@ function plotStateModulation()
 % Usage:
 %   plotStateModulation
 %
+% Input: 
+%   - cfg: a struct that contains a path to your main Ferguson_et_al_2023
+%   directory in cfg.dir.baseDir
+%
 % Outputs:
-%   - Generates figures with distribution plots and box/whisker plots for each cell population's state modulation index data.
+%   - Generates figures with histograms and box/whisker plots for each cell population's state modulation index data.
 %   - Stores the linear mixed-effects model results in 'lme' variable.
 %
 % Dependencies:
@@ -29,14 +33,11 @@ function plotStateModulation()
 % written by Katie A. Ferguson, Yale University, 2023
 
 
-% define dirs and add to path
-cfg.dir.baseDir = '~/Desktop/Ferguson_et_al_2023';
-p = genpath(cfg.dir.baseDir);
-addpath(p);  
+ 
 cfg.dir.folder = fullfile(cfg.dir.baseDir, 'Figure1StateModulation');
 
 % run for SST and PN cell types
-popTypes =  {'PN'}; %{'SST', 'PN'}; % 
+popTypes =  {'SST', 'PN'}; 
 nExps = length(popTypes);
 
 % set some figure properties
@@ -46,7 +47,7 @@ cfg = setFigPropBasic(cfg);
 for iPop = 1:nExps
 
     % load state modulation index data
-    cfg.dir.MIFileName{iPop} = sprintf('VIP-%s_MI_1.mat', popTypes{iPop});
+    cfg.dir.MIFileName{iPop} = sprintf('VIP-%s_MI.mat', popTypes{iPop});
     load(fullfile(cfg.dir.folder, cfg.dir.MIFileName{iPop}));
 
     % set experiment-dependent figure properties
