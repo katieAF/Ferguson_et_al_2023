@@ -1,0 +1,65 @@
+function cfg = plotSSI(SI, cfg, f)
+% PLOTSSI - Creates histograms of state-specific surround suppression index (SI) values
+%
+% Inputs:
+%    SI    - Structure containing surround suppression indices (SI.SI), and indicates the 
+%           experiment type (SI.expType) and state (SI.state)
+%    cfg   - Configuration structure containing plot settings and options
+%    f     - Figure handle for the plot
+%
+% Outputs:
+%    cfg   - Updated configuration structure
+%
+% This function generates histograms for state-specific SI values. The function
+% iterates through unique experiment types and states, and creates histograms
+% for each combination. The plot is created in the given figure handle (f).
+% Colors and other plot properties are defined in the input configuration
+% structure (cfg).
+%
+% Katie Ferguson, Yale University, 2023
+
+set(0,'CurrentFigure',f);
+
+unExpType = unique(SI.expType);
+unState = unique(SI.state);
+
+% figure properies
+bw = cfg.plt.hist.binWidth; 
+
+% iterate through control vs caspase
+for iExp = 1:length(unExpType)
+
+    % iterate through locomotion and quiescence states
+    for iState = 1:length(unState)
+        
+        nexttile(cfg.plt.tilePlc(cfg.plt.cnt), cfg.plt.tileIdx(cfg.plt.cnt, :));
+        % set color
+        col = cfg.plt.colors{iExp}(iState,:);
+
+        idx = SI.expType == unExpType(iExp) & SI.state == unState(iState); 
+        
+        % plot histogram
+        histogram(SI.SI(idx), 'binwidth', bw, 'Normalization','probability', ...
+            'FaceColor', col, 'FaceAlpha', 1, 'EdgeColor', 'none', 'Orientation','horizontal'); 
+
+       % If control, flip on axis
+       if iExp == 1
+        set(gca,'xdir','reverse')
+        ylabel(cfg.plt.hist.ylabel{iState}, 'FontSize', 12)
+       end
+
+       if iState == 1
+           xlabel(cfg.plt.hist.xlabel); 
+       end
+        xlim(cfg.plt.hist.xlim); 
+
+        cfg.plt.cnt = cfg.plt.cnt + 1;  % add to counter
+
+    end
+
+
+end
+
+
+
+end

@@ -1,0 +1,228 @@
+function plotSizeTuning(varargin)
+
+% PLOTSIZETUNING Plots size tuning curves, surround suppression histograms, and box plots for data in Figure 2 of Ferguson et al. 2023.
+%
+% Loads and plots the size tuning data for two cell populations, SST and PN.  For each population, it loads the
+% experiment information and data, sets experiment-specific figure properties, creates size tuning plots, surround
+% suppression index (SSI) histograms, and box/whisker plots for the visual stimulation data.
+%
+% Usage:
+%   plotSizeTuning(cfg) or plotSizeTuning()
+%
+% Input:
+%   - cfg (optional): a struct that contains a path to your main Ferguson_et_al_2023
+%   directory in cfg.dir.baseDir.  If not given, will set cfg.dir.baseDir to current
+%   directory, which assumes you're in the main Ferguson_et_al_2023 folder.
+%
+% Outputs:
+%   - Generates figures with size tuning plots, SSI histograms, and box/whisker plots for each cell population's visual stimulation data.
+%
+% Dependencies:
+%   - Requires data files 'VIP-SST_size.mat' and 'VIP-PN_size.mat', located in the Figure2SizeTuning folder.
+%
+% Data structure:
+%   - The loaded data files contain a struct "vis" with fields:
+%       - vis.size: vector of unique sizes of visual stimuli
+%       - vis.meanZca: vector of mean z-scored Ca2+ responses to each
+%       visual stimulus size
+%       - vis.semZca: vector of S.E.M. z-scored Ca2+ responses to each
+%       visual stimulus size
+%       - vis.expType: vector indicating experiment type: control (1) or caspase (2)
+%       - vis.state: vector indicating behavioral state: locomotion (1) or quiescence (2)
+%   - A struct "SI" with fields:
+%       - SI.SI: vector of surround suppression indices for each cell
+%       - SI.mouse: vector of unique mouse numbers
+%       - SI.fov: vector of unique field of view numbers
+%       - SI.expType: vector indicating experiment type: control (1) or caspase (2)
+%       - SI.state: vector indicating behavioral state: locomotion (1) or quiescence (2)
+%   and a struct "infoSummary" containing additional information about the
+%   recording, and figure configuration details
+
+% written by Katie A. Ferguson, Yale University, 2023
+
+% define directory paths
+if nargin ~= 0
+    cfg = varargin{1};
+else
+    cfg.dir.baseDir = pwd;
+end
+cfg.dir.folder = fullfile(cfg.dir.baseDir, 'Figure2SizeTuning');
+
+% run for SST and PN cell types
+popTypes =  {'SST', 'PN'};
+nExps = length(popTypes);
+
+% iterate through cell types and plot
+for iPop = 1:nExps
+
+    % load size tuning data
+    cfg.dir.MIFileName{iPop} = sprintf('VIP-%s_size.mat', popTypes{iPop});
+    load(fullfile(cfg.dir.folder, cfg.dir.MIFileName{iPop}));
+
+    % set figure properties
+    cfg = setFig2Properties(cfg, infoSummary);
+
+    f(iPop) = figure;
+    t = tiledlayout(cfg.plt.subplotSz(1), cfg.plt.subplotSz(2), "TileSpacing","compact");
+    set(f(iPop), 'Position', [500 250 725 700])
+    title(t, cfg.plt.fullTitle)
+
+    % plot tuning curves with fits
+    cfg = plotTuningCurves(vis, cfg, f(iPop));
+
+    % plot SSI histograms
+    cfg = plotSSI(SI, cfg, f(iPop));
+
+    % plot box/whisker plots for SSI
+    cfg = plotSSIbox(SI, cfg, f(iPop));
+
+end
+
+end
+
+
+%%%
+
+
+function cfg = plotTuningCurves(vis, cfg, f)
+% plot tuning curves with fits
+
+set(0,'CurrentFigure',f);
+
+unExpType = unique(vis.expType);
+unState = unique(vis.state);
+
+% iterate through control vs caspase
+for iExp = 1:length(unExpType)
+
+    nexttile(cfg.plt.tilePlc(cfg.plt.cnt), cfg.plt.tileIdx(cfg.plt.cnt, :))
+
+    % iterate through locomotion and quiescence states
+    for iState = 1:length(unState)
+
+        idx = vis.expType == unExpType(iExp) & vis.state == unState(iState);
+
+        % set color
+        col = cfg.plt.colors{iExp}(iState,:);
+
+        % plot errorbar
+        errorbar(vis.size(idx), vis.meanZca(idx), vis.semZca(idx), ...
+            's','Color', col, 'CapSize', 0, 'MarkerSize', 10, 'MarkerEdgeColor', col,'MarkerFaceColor', col);
+        hold on;
+
+        % find max/min for y axis limits
+        mx(iExp, iState) = max(vis.meanZca(idx) + vis.semZca(idx));
+        mn(iExp, iState) = min(vis.meanZca(idx) - vis.semZca(idx));
+
+        % fit curves
+        [xCurve, fitCurve] = fitTuningCurve(vis.size(idx), vis.meanZca(idx));
+
+        hold on;
+        plot(xCurve, fitCurve,'linewidth',1.5,'Color', col);
+
+    end
+
+    xlabel(cfg.plt.tune.xlabel, 'FontSize', 12);
+    ylabel(cfg.plt.tune.ylabel, 'FontSize', 12)
+
+    cfg.plt.cnt = cfg.plt.cnt + 1;  % add to counter
+
+end
+
+ylim([min(mn, [], 'all'), max(mx, [], 'all')]);
+
+end
+
+
+function cfg = plotSSI(SI, cfg, f)
+% plot SSI histograms
+
+set(0,'CurrentFigure',f);
+
+unExpType = unique(SI.expType);
+unState = unique(SI.state);
+
+% figure prop
+bw = cfg.plt.hist.binWidth; 
+titleStr = cfg.plt.hist.title; 
+
+% iterate through control vs caspase
+for iExp = 1:length(unExpType)
+
+    % iterate through locomotion and quiescence states
+    for iState = 1:length(unState)
+        
+        nexttile(cfg.plt.tilePlc(cfg.plt.cnt), cfg.plt.tileIdx(cfg.plt.cnt, :));
+        % set color
+        col = cfg.plt.colors{iExp}(iState,:);
+
+        idx = SI.expType == unExpType(iExp) & SI.state == unState(iState); 
+        
+        histogram(SI.SI(idx), 'binwidth', bw, 'Normalization','probability', ...
+            'FaceColor', col, 'FaceAlpha', 1, 'EdgeColor', 'none', 'Orientation','horizontal'); 
+
+       % If control, flip
+       if iExp == 1
+        set(gca,'xdir','reverse')
+        ylabel(cfg.plt.hist.ylabel{iState}, 'FontSize', 12)
+       end
+        xlim(cfg.plt.hist.xlim); 
+
+        cfg.plt.cnt = cfg.plt.cnt + 1;  % add to counter
+
+    end
+
+
+end
+
+
+
+end
+
+function cfg = plotSSIbox(SI, cfg, f)
+% MAKEMIBOXPLOT makes box and whisker plots for the state modulation
+% indices
+
+unState = unique(SI.state);
+
+set(0,'CurrentFigure',f);
+warning('off', 'MATLAB:handle_graphics:Layout:NoPositionSetInTiledChartLayout')
+
+bxColorFull = [cfg.plt.colors{:}];
+
+for iState = 1:length(unState)
+
+nexttile(cfg.plt.tilePlc(cfg.plt.cnt), cfg.plt.tileIdx(cfg.plt.cnt, :));
+hold on;
+
+% set colors
+bxColor = reshape(bxColorFull(iState,:), [], 2)';   % reshape so [ctrl;casp] for specific state 
+
+idx = SI.state == unState(iState); 
+
+% box plot 
+plbx = makeBoxPlot(SI.SI(idx), SI.expType(idx), {'',''}, bxColor);
+
+ylabel(cfg.plt.box.ylabel, 'FontSize', 12);
+ylim(cfg.plt.box.ylim); 
+
+cfg.plt.cnt = cfg.plt.cnt + 1;  % add to counter
+
+end
+
+end
+
+
+function [xCurve, fitCurve] = fitTuningCurve(xVal, yVal)
+
+erf_fitT = @(x,xdata) x(1)*(erf(xdata/x(2))- x(3)*erf(xdata/x(4)))+x(5);
+erf_fit = 'a*(erf(x/b) - c*erf(x/d)) + e';
+x0 = [10, 22 , 10, 800 ,0];
+
+fmn = fit(xVal, yVal, erf_fit, 'Start', x0);
+xmn = coeffvalues(fmn);
+
+xCurve = linspace(0,max(xVal),2000);
+fitCurve = erf_fitT(xmn,xCurve);
+
+end

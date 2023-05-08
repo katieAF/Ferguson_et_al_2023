@@ -1,12 +1,7 @@
-function runMainFigures()
-
-% RUNMAINFIGURES generates the main Figures of Ferguson et al. 2023.
+% RUNMAINFIGURES script generates the main Figures of Ferguson et al. 2023.
 %
 % Loads the data and plots the main figures of Ferguson et al., 2023, including state modulation, size tuning, and 
 % behavioral data plots. 
-%
-% Usage:
-%   runMainFigures
 %
 % Outputs:
 %   - Generates the main figures:
@@ -20,16 +15,23 @@ function runMainFigures()
 
 % written by Katie A. Ferguson, Yale University, 2023
 
-% define dirs and add to path
+%% define dirs and add to path 
 
-% Assumes you're running from the main directory. Otherwise change cfg.dir.baseDir to hard path e.g., '~/Desktop/Ferguson_et_al_2023'.  
+% Assumes you're running from the main directory. Otherwise change cfg.dir.baseDir to hard path e.g., '~/Desktop/Ferguson_et_al_2023').  
 cfg.dir.baseDir = pwd; % your path to Ferguson_et_al_2023 folder.  
 p = genpath(cfg.dir.baseDir);
 addpath(p); 
 
-% Figure 1
+%% Figure 1
+
 plotStateModulation(cfg)
 
+%% Figure 2
+
+plotSizeTuning(cfg)
+
+%% Figure 3
+
+plotBehavior(cfg)
 
 
-end

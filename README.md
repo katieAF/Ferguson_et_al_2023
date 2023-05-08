@@ -10,4 +10,4 @@ This code was generated and run in MATLAB R2022b.
 
 ### Usage
 
-Run the runMainFigures.m function to generate the main figures.  The data for each main figure is contained in its respective folder.  
+Run the script runMainFigures.m from the Ferguson_et_al_2023 folder (or update paths in runMainFigures.m) to generate the main figures.  The data for each main figure is contained in its respective folder.  
